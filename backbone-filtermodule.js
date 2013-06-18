@@ -1,11 +1,26 @@
+//     Backbone FilterModule 0.1.0
 
-var FilterModule = {}
+//     (c) 2013 Benjamin Best
+//     Backbone FilterModule may be freely distributed under the MIT license.
+//     For details and documentation: https://github.com/azundo/backbone-filtermodule
+//     
+
+(function(){
+
+var FilterModule;
+if (typeof exports !== 'undefined') {
+  FilterModule = exports;
+} else if (typeof Backbone !== 'undefined') {
+  FilterModule = Backbone.FilterModule = {};
+}
 
 // model for a filter control
-FilterModule.FilterModel = Model.extend({
+FilterModule.FilterModel = Backbone.Model.extend({
   defaults: {
-    /* required properties when the model */
+    /* required properties */
     name: "",
+    // choices should be an array of objects with text and value properties
+    // [{value: 'mystery', text: 'Mystery'}, {value: 'thriller', text: 'Thriller'}]
     choices: [],
     /* optional properties */
     defaultState: 'all',
@@ -13,7 +28,7 @@ FilterModule.FilterModel = Model.extend({
   },
   initialize: function (attributes) {
     if (!attributes.state) {
-      this.set('state', this.defaultState);
+      this.set('state', this.get('defaultState'));
     }
   },
   // override backbone sync function to a no op since
@@ -24,17 +39,12 @@ FilterModule.FilterModel = Model.extend({
 });
 
 // collection of filter controls
-FilterModule.FilterCollection = Collection.extend({
+FilterModule.FilterCollection = Backbone.Collection.extend({
   model: FilterModule.FilterModel,
   initialize: function (options) {
     // use a custom change function if supplied
-    // otherwise broadcast a global Backbone event
     if (options && options.onChange ) {
       this.on('change', options.onChange, this)
-    } else {
-      this.on('change', function () {
-        Backbone.trigger('change:filter', this);
-      }, this);
     }
   },
   getFilterValues: function () {
@@ -47,7 +57,7 @@ FilterModule.FilterCollection = Collection.extend({
 });
 
 // filter control view
-FilterModule.FilterView = View.extend({
+FilterModule.FilterView = Backbone.View.extend({
   // pass in a template or SubClass FilterView
   // template: require('./templates/filter'),
 
@@ -96,28 +106,32 @@ FilterModule.FilterView = View.extend({
 /*
  * A generic class for a FilteredList
  * Requirements:
- * Collection should be full of Models that have an isActive function taking an
- * object with keys: filterName, values: filterValue
- * SubView needs a showing() method to determine whether or not it is currently visible
+ * Implement methods below
  */
 
-FilterModule.BaseFilteredListView = View.extend({
+FilterModule.BaseFilteredListView = Backbone.View.extend({
   // el: "#your-el-here",
-  // SubView: YourSubViewClassHere,
+  // ItemView: YourItemViewClassHere,
   // render: function () { add render function },
   // onExit: function (exitingItem) { function to deal with exiting items, should return promises. }
   // onUpdate: function (updatingItem) { function to deal with updating items, should return promises. }
   // onEnter: function (enteringItem) { function to deal with entering items, should return promises. }
+  // itemIsShowing: function (itemView) { function to determine if itemView is showing or not. }
+  // itemIsActive: function (item, filterVals) { function to determine if an item should be filtered out or not. }
   initialize: function (options) {
-    this.subviews = {};
+    this.itemViews = {};
     // pass in filter models explicitly as a collection
-    if (options && options.filterCollection) {
-      this.listenTo(options.filterCollection, 'change', this._filter);
-    // listen to the change:filter event on the global Backbone bus
-    } else {
-      this.listenTo(Backbone, 'change:filter', this._filter);
-    }
+    this.filterCollection = options.filterCollection;
+
+    // collection reset
     this.listenTo(options.collection, 'reset', this._load, this);
+
+    // collection modification
+    this.listenTo(options.filterCollection, 'change', this._filter);
+
+    // manage adding and destroying itemView as well
+    this.listenTo(options.collection, 'add', this._add, this);
+    this.listenTo(options.collection, 'remove', this._remove, this);
 
     // hook for subclass initialization
     if (this.onInit) {
@@ -125,75 +139,93 @@ FilterModule.BaseFilteredListView = View.extend({
     }
   },
 
+  /* _getItemStatuses returns an object of arrays holding itemView instances keyed by status.
+   * Also attaches a filteredIdx to each itemView for animation algorithms to make use of.
+   */
   _getItemStatuses: function (filterVals) {
-    var exiting = [],
-      updating = [],
-      entering = [],
+    var statuses = {
+        exiting: [],
+        updating: [],
+        entering: []
+      },
       idx = 0;
     this.collection.each(function (listItem) {
-      var subView = this.subviews[listItem.id];
-      if (subView.showing() && !listItem.isActive(filterVals)) {
-        subView.filteredIdx = null;
-        exiting.push(subView);
-      } else if (listItem.isActive(filterVals)) {
-        subView.filteredIdx = idx;
-        if (subView.showing()) {
+      var itemView = this.itemViews[listItem.cid],
+        isShowing = this.itemIsShowing(itemView),
+        isActive = this.itemIsActive(listItem, filterVals);
+      if (isShowing && !isActive) {
+        itemView.filteredIdx = null;
+        statuses.exiting.push(itemView);
+      } else if (isActive) {
+        itemView.filteredIdx = idx;
+        idx++;
+        if (isShowing) {
           // update active items if they are already showing
-          updating.push(subView);
+          statuses.updating.push(itemView);
         } else {
           // have them enter otherwise
-          entering.push(subView);
+          statuses.entering.push(itemView);
         }
-        idx++;
       }
     }, this);
-    return [exiting, updating, entering];
+    return statuses;
   },
 
-  _filter: function(filterCollection) {
+  _filter: function() {
     var that = this,
-    filterVals = filterCollection.getFilterValues(),
-    // get updated statuses
-    statuses = this._getItemStatuses(filterVals),
-    exiting = statuses[0],
-    updating = statuses[1],
-    entering = statuses[2],
-    exitingPromises;
+      filterVals = this.filterCollection.getFilterValues(),
+      // get updated statuses
+      statuses = this._getItemStatuses(filterVals),
+      exitingPromises;
     // exit immediately
-    exitingPromises = _.map(exiting, function (toExit) {
+    exitingPromises = _.map(statuses.exiting, function (toExit) {
       return this.onExit(toExit);
     }, this);
     // start updating immediately
-    _.each(updating, function (toUpdate) {
+    _.each(statuses.updating, function (toUpdate) {
       this.onUpdate(toUpdate);
     }, this);
     // wait until everything has exited before entering others
     $.when.apply($, exitingPromises).done(function () {
-      _.each(entering, function (toEnter) {
+      _.each(statuses.entering, function (toEnter) {
         this.onEnter(toEnter);
       }, that);
     });
   },
 
+  _createItemView: function (item) {
+    var itemView = new this.ItemView({
+      model: item,
+      parentView: this
+    }).render();
+    this.itemViews[item.cid] = itemView;
+    itemView.$el.appendTo(this.$el);
+    return itemView;
+  },
+  _add: function (newItem) {
+    this._createItemView(newItem);
+    this._filter();
+  },
+  _remove: function (item) {
+    this.itemViews[item.cid].remove();
+    delete this.itemViews[item.cid];
+    this._filter();
+  },
   _load: function () {
     var that = this;
     // if we are reloading the collection make sure to
-    // kill off all existing subviews
-    for (var subView in this.subviews) {
-      this.subviews[subView].remove();
+    // kill off all existing itemViews
+    for (var itemView in this.itemViews) {
+      this.itemViews[itemView].remove();
     }
-    this.subviews = [];
+    this.itemViews = [];
     this.collection.each(function(listItem) {
-      var subView = new this.SubView(
-        { model: listItem, 
-          parentView: this
-        }).render();
-      this.subviews[listItem.id] = subView;
-      subView.$el.appendTo(this.$el);
+      this._createItemView(listItem);
     }, this);
     if (this.onCollectionLoad) {
       this.onCollectionLoad();
     }
+    this._filter();
   }
 });
 
@@ -202,18 +234,18 @@ FilterModule.BaseFilteredListView = View.extend({
  * This implementation uses absolute positioning to simply put subview items
  * into rows.
  */
-FilterModule.FilteredListView = BaseFilteredListView.extend({
+FilterModule.FilteredListView = FilterModule.BaseFilteredListView.extend({
   el: '#filtered-list',
 
-  SubView: FilterModule.FilteredListItemView,
+  ItemView: FilterModule.FilteredListItemView,
 
   onCollectionLoad: function () {
     // set width properties
     var first = this.collection.at(0);
     if (first) {
-      var subView = this.subviews[first.id];
-      this.itemWidth = subView.$el.outerWidth(true);
-      this.itemHeight = subView.$el.outerHeight(true);
+      var itemView = this.itemViews[first.cid];
+      this.itemWidth = itemView.$el.outerWidth(true);
+      this.itemHeight = itemView.$el.outerHeight(true);
       this.rowLength = parseInt(this.rowWidth / this.itemWidth, 10);
     }
   },
@@ -223,10 +255,10 @@ FilterModule.FilteredListView = BaseFilteredListView.extend({
     this.rowWidth = this.$el.width();
   },
 
-  _getPosition : function (subView) {
-    var row = parseInt(subView.filteredIdx / this.rowLength, 10),
+  _getPosition : function (itemView) {
+    var row = parseInt(itemView.filteredIdx / this.rowLength, 10),
     top = row * this.itemHeight,
-    left = (subView.filteredIdx % this.rowLength) * this.itemWidth;
+    left = (itemView.filteredIdx % this.rowLength) * this.itemWidth;
     return {top: top, left: left};
   },
 
@@ -251,25 +283,20 @@ FilterModule.FilteredListView = BaseFilteredListView.extend({
       .animate({top: position.top + 'px', left: position.left + 'px'}, 1000)
       .promise();
   },
-
-  render: function () {
-    return this;
-  }
-});
-
-/*
- * Example of a FilteredListItemView. Render still a no-op.
- */
-FilterModule.FilteredListItemView = View.extend({
-  showing: function () {
-    return this.$el.is(":visible");
+  itemIsShowing: function (itemView) {
+    return itemView.$el.is(":visible");
   },
-
+  itemIsActive: function (item, filterVals) {
+    for (var filterName in filterVals) {
+      if (item.has(filterName) && filterVals[filterName] !== 'all' && item.get(filterName) !== filterVals[filterName]) {
+        return false;
+      }
+    }
+    return true;
+  },
   render: function () {
     return this;
   }
 });
 
-if (module && module.exports) {
-  module.exports = FilterModule;
-}
+}).call(this);
