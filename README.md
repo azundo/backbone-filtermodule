@@ -17,7 +17,7 @@ accordingly.
 
 ***Step By Step***
 
-See the shapes example in the examples/ directory for a working example. Visible at https://raw.github.com/azundo/backbone-filtermodule/master/examples/shapes.html.
+See the shapes example in the examples/ directory for a working example.
 
 # Create filters and add them to a collection.
     ```javascript
