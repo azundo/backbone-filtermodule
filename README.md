@@ -3,11 +3,11 @@ backbone-filtermodule
 
 A reusable module to for filtering collections within a view.
 
-**Dependencies**
+##Dependencies
 
 Requires BackboneJS >= 0.9.9.
 
-**Usage**
+##Usage
 
 Backbone filtermodule contains several components making up a filtered view.  Each filter control has a model for storing state and a view for interacting
 with the filter. There is a container view which holds the collection to be
@@ -15,11 +15,11 @@ filtered, and each model in the collection also has a view. The container view
 listens to changes on the filters and updates the subview of each item
 accordingly.
 
-***Step By Step***
+###Step By Step
 
 See the shapes example in the examples/ directory for a working example.
 
-# Create filters and add them to a collection.
+1. Create filters and add them to a collection.
     ```javascript
     var genreFilterModel = new Backbone.FilterModule.FilterModel({
             name: 'genre',
@@ -38,7 +38,7 @@ See the shapes example in the examples/ directory for a working example.
             genreFilterModel, authorFilterModel]);
     ```
 
-# Create views for each filter control and render them, supplying a template.
+2. Create views for each filter control and render them, supplying a template.
     ```javascript
     var genreFilterView = new Backbone.FilterModule.FilterView({
             model: genreFilterModel,
@@ -49,7 +49,7 @@ See the shapes example in the examples/ directory for a working example.
             template: _.template($('#author-filter-template').text()),
             el: '#author-filter'}).render();
     ```
-# Create a collection of items to be filtered on
+3. Create a collection of items to be filtered on
     ```javascript
     var bookCollection = new Backbone.Collection([
         {
@@ -63,7 +63,7 @@ See the shapes example in the examples/ directory for a working example.
     ]);
     ```
 
-# Create View classes for your list items and item list.
+4. Create View classes for your list items and item list.
     ```javascript
     var MyItemView = Backbone.View.extend({
         template: _.template($('#item-view').text()),
@@ -77,7 +77,7 @@ See the shapes example in the examples/ directory for a working example.
     });
     ```
 
-# Create and render the filteredListView with your filter collection and item collection
+5. Create and render the filteredListView with your filter collection and item collection
     ```javascript
     var filteredListView = new FilteredListView({
         el: '#filter-el',
@@ -86,13 +86,13 @@ See the shapes example in the examples/ directory for a working example.
     }).render();
     ```
 
-# Reset the item collection to get things going.
+6. Reset the item collection to get things going.
     ```javascript
     filterCollection.trigger('reset');
     ```
     Will respond to resetting the item collection, adding or removing items from the collection or modifying the filters.
 
-***Customization***
+###Customization
 
 The default implementation of `FilterModule.FilterListView` provides animation
 algorithms for entering, updating and leaving items, as well as functions for
