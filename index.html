@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Backbone-filtermodule : A simple reusable module to for filtering collections within a view." />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Backbone-filtermodule</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/azundo/backbone-filtermodule">View on GitHub</a>
+
+          <h1 id="project_title">Backbone-filtermodule</h1>
+          <h2 id="project_tagline">A simple reusable module to for filtering collections within a view.</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/azundo/backbone-filtermodule/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/azundo/backbone-filtermodule/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h2>
+<a name="usage" class="anchor" href="#usage"><span class="octicon octicon-link"></span></a>Usage</h2>
+
+<p>Backbone filtermodule contains several components making up a filtered view.  Each filter control has a model for storing state and a view for interacting
+with the filter. There is a container view which holds the collection to be
+filtered, and each model in the collection also has a view. The container view
+listens to changes on the filters and updates the subview of each item
+accordingly.</p>
+
+<h3>
+<a name="step-by-step" class="anchor" href="#step-by-step"><span class="octicon octicon-link"></span></a>Step By Step</h3>
+
+<p>See the shapes example in the examples/ directory for a working example.</p>
+
+<ol>
+<li>
+<p>Create filters and add them to a collection.</p>
+
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">genreFilterModel</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">FilterModule</span><span class="p">.</span><span class="nx">FilterModel</span><span class="p">({</span>
+        <span class="nx">name</span><span class="o">:</span> <span class="s1">'genre'</span><span class="p">,</span>
+        <span class="nx">choices</span><span class="o">:</span> <span class="p">[</span>
+            <span class="p">{</span><span class="nx">value</span><span class="o">:</span> <span class="s1">'mystery'</span><span class="p">,</span> <span class="nx">text</span><span class="o">:</span> <span class="s1">'Mystery'</span><span class="p">},</span>
+            <span class="p">{</span><span class="nx">value</span><span class="o">:</span> <span class="s1">'romance'</span><span class="p">,</span> <span class="nx">text</span><span class="o">:</span> <span class="s1">'Romance'</span><span class="p">},</span>
+            <span class="p">{</span><span class="nx">value</span><span class="o">:</span> <span class="s1">'thriller'</span><span class="p">,</span> <span class="nx">text</span><span class="o">:</span> <span class="s1">'Thriller'</span><span class="p">},</span>
+            <span class="p">{</span><span class="nx">value</span><span class="o">:</span> <span class="s1">'biography'</span><span class="p">,</span> <span class="nx">text</span><span class="o">:</span> <span class="s1">'Biography'</span><span class="p">}</span>
+        <span class="p">]</span>
+    <span class="p">});</span>
+<span class="kd">var</span> <span class="nx">authorFilterModel</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">FilterModule</span><span class="p">.</span><span class="nx">FilterModel</span><span class="p">({</span>
+    <span class="p">...</span>
+<span class="p">});</span>
+
+<span class="kd">var</span> <span class="nx">filterCollection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">FilterModule</span><span class="p">.</span><span class="nx">FilterCollection</span><span class="p">([</span>
+        <span class="nx">genreFilterModel</span><span class="p">,</span> <span class="nx">authorFilterModel</span><span class="p">]);</span>
+</pre></div>
+</li>
+<li>
+<p>Create views for each filter control and render them, supplying a template.</p>
+
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">genreFilterView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">FilterModule</span><span class="p">.</span><span class="nx">FilterView</span><span class="p">({</span>
+        <span class="nx">model</span><span class="o">:</span> <span class="nx">genreFilterModel</span><span class="p">,</span>
+        <span class="nx">template</span><span class="o">:</span> <span class="nx">_</span><span class="p">.</span><span class="nx">template</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s1">'#genre-filter-template'</span><span class="p">).</span><span class="nx">text</span><span class="p">()),</span>
+        <span class="nx">el</span><span class="o">:</span> <span class="s1">'#genre-filter'</span><span class="p">}).</span><span class="nx">render</span><span class="p">();</span>
+<span class="kd">var</span> <span class="nx">authorFilterView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">FilterModule</span><span class="p">.</span><span class="nx">FilterView</span><span class="p">({</span>
+        <span class="nx">model</span><span class="o">:</span> <span class="nx">authorFilterModel</span><span class="p">,</span>
+        <span class="nx">template</span><span class="o">:</span> <span class="nx">_</span><span class="p">.</span><span class="nx">template</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s1">'#author-filter-template'</span><span class="p">).</span><span class="nx">text</span><span class="p">()),</span>
+        <span class="nx">el</span><span class="o">:</span> <span class="s1">'#author-filter'</span><span class="p">}).</span><span class="nx">render</span><span class="p">();</span>
+</pre></div>
+</li>
+<li>
+<p>Create a collection of items to be filtered on</p>
+
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">bookCollection</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">([</span>
+    <span class="p">{</span>
+        <span class="nx">genre</span><span class="o">:</span> <span class="s1">'thriller'</span><span class="p">,</span>
+        <span class="nx">author</span><span class="o">:</span> <span class="s1">'King, Stephen'</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="nx">genre</span><span class="o">:</span> <span class="err">'</span><span class="nx">mystery</span><span class="p">,</span>
+        <span class="nx">author</span><span class="o">:</span> <span class="p">...</span>
+    <span class="p">}</span>
+<span class="p">]);</span>
+</pre></div>
+</li>
+<li>
+<p>Create View classes for your list items and item list.</p>
+
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">MyItemView</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">View</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="nx">template</span><span class="o">:</span> <span class="nx">_</span><span class="p">.</span><span class="nx">template</span><span class="p">(</span><span class="nx">$</span><span class="p">(</span><span class="s1">'#item-view'</span><span class="p">).</span><span class="nx">text</span><span class="p">()),</span>
+    <span class="nx">render</span><span class="o">:</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">$el</span><span class="p">.</span><span class="nx">html</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">template</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">toJSON</span><span class="p">));</span>
+        <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+<span class="kd">var</span> <span class="nx">MyFilteredListView</span> <span class="o">=</span> <span class="nx">Backbone</span><span class="p">.</span><span class="nx">FilterModule</span><span class="p">.</span><span class="nx">FilteredListView</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="nx">ItemView</span><span class="o">:</span> <span class="nx">MyItemView</span>
+<span class="p">});</span>
+</pre></div>
+</li>
+<li>
+<p>Create and render the filteredListView with your filter collection and item collection</p>
+
+<div class="highlight"><pre><span class="kd">var</span> <span class="nx">filteredListView</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">FilteredListView</span><span class="p">({</span>
+    <span class="nx">el</span><span class="o">:</span> <span class="s1">'#filter-el'</span><span class="p">,</span>
+    <span class="nx">collection</span><span class="o">:</span> <span class="nx">bookCollection</span><span class="p">,</span>
+    <span class="nx">filterCollection</span><span class="o">:</span> <span class="nx">filterCollection</span>
+<span class="p">}).</span><span class="nx">render</span><span class="p">();</span>
+</pre></div>
+</li>
+<li>
+<p>Reset the item collection to get things going.</p>
+
+<div class="highlight"><pre><span class="nx">filterCollection</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span><span class="s1">'reset'</span><span class="p">);</span>
+</pre></div>
+
+<p>Will respond to resetting the item collection, adding or removing items from the collection or modifying the filters.</p>
+</li>
+</ol><h3>
+<a name="customization" class="anchor" href="#customization"><span class="octicon octicon-link"></span></a>Customization</h3>
+
+<p>The default implementation of <code>FilterModule.FilterListView</code> provides animation
+algorithms for entering, updating and leaving items, as well as functions for
+evaluating whether or not an item passes the filter tests. You may want to
+customize these by overriding any or all of the methods not declared in
+<code>FilterModule.BaseFilterListView</code>. See the source for more specifics and to see
+the reference implementation of <code>FilterModule.FilterListView</code>.</p>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Backbone-filtermodule maintained by <a href="https://github.com/azundo">azundo</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
