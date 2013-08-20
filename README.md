@@ -3,6 +3,11 @@ backbone-filtermodule
 
 A reusable module to for filtering collections within a view.
 
+##Example
+
+See it in action at
+[http://azundo.github.io/backbone-filtermodule/examples/shapes.html](http://azundo.github.io/backbone-filtermodule/examples/shapes.html).
+
 ##Dependencies
 
 Requires BackboneJS >= 0.9.9.
