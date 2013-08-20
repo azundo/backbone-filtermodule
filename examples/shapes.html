@@ -1,0 +1,140 @@
+<!doctype html>
+
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Backbone FilterModule - Shapes</title>
+  <link type="text/css" rel="stylesheet" href="./css/style.css">
+</head>
+
+<body>
+<h1>Backbone FilterModule - Shapes Example</h1>
+
+<div id="filters">
+  <div id="shape-filter"></div>
+  <div id="color-filter"></div>
+  <div id="count-filter"></div>
+</div>
+<div id="cards-list" class="filtered-list"></div>
+
+<script type="text/template" id="select-filter-template">
+  <select id="filter-<%= name %>">
+  <% for (var choice in choices) { %>
+    <option value="<%= choices[choice].value %>"><%= choices[choice].text %></option>
+  <% } %>
+  </select>
+</script>
+
+<script type="text/template" id="card-template">
+  <% for (var i=0; i < count; i++) { %>
+    <div class="shape <%= shape %> <%= color %>"></div>
+  <% } %>
+    <div class="clearfix"></div>
+</script>
+
+<script type="text/javascript" src="vendor/jquery.js"></script>
+<script type="text/javascript" src="vendor/underscore.js"></script>
+<script type="text/javascript" src="vendor/backbone.js"></script>
+<script type="text/javascript" src="../javascripts/backbone-filtermodule.js"></script>
+<script type="text/javascript">
+  // Filter models and views
+  var colorFilterModel = new Backbone.FilterModule.FilterModel({
+      name: 'color',
+      choices: [
+        {value:'all', text:'All Colors'},
+        {value:'red', text:'Red'},
+        {value:'blue', text:'Blue'},
+        {value: 'green', text: 'Green'}
+      ]
+    }),
+    shapeFilterModel = new Backbone.FilterModule.FilterModel({
+      name: 'shape',
+      choices: [
+        {value: 'all', text: 'All Shapes'},
+        {value: 'circle', text: 'Circle'},
+        {value: 'square', text: 'Square'},
+        {value: 'triangle', text: 'Triangle'}
+      ]
+    }),
+    countFilterModel = new Backbone.FilterModule.FilterModel({
+      name: 'count',
+      choices: [
+        {value: 'all', text: 'All Counts'},
+        {value: 1, text: '1'},
+        {value: 2, text: '2'},
+        {value: 3, text: '3'}
+      ]
+    }),
+
+    filterCollection = new Backbone.FilterModule.FilterCollection(
+            [colorFilterModel, shapeFilterModel, countFilterModel]),
+
+    selectFilterTemplate = _.template($('#select-filter-template').text()),
+    colorFilterView = new Backbone.FilterModule.FilterView({
+        el: '#color-filter',
+        model: colorFilterModel,
+        template: selectFilterTemplate
+    }).render(),
+    shapeFilterView = new Backbone.FilterModule.FilterView({
+        el: '#shape-filter',
+        model: shapeFilterModel,
+        template: selectFilterTemplate
+    }).render(),
+    countFilterView = new Backbone.FilterModule.FilterView({
+        el: '#count-filter',
+        model: countFilterModel,
+        template: selectFilterTemplate
+    }).render(),
+
+    // items, collection and views
+    cardModels = [],
+    cards,
+    ShapeCardView = Backbone.View.extend({
+      className: 'shape-card',
+      template: _.template($('#card-template').text()),
+      render: function () {
+        this.$el.html(this.template(this.model.toJSON()));
+        return this;
+      }
+    }),
+    // Use FilteredListView which has a default implementation for
+    // all necessary methods. Extend BaseFilteredListView and supply
+    // onExit, onUpdate, onEnter, itemIsActive and itemIsShowing methods
+    // for custom behavior.
+    ShapeCardListView = Backbone.FilterModule.FilteredListView.extend({
+        ItemView: ShapeCardView
+    }),
+    shapeCardListView,
+
+    // our filter values
+    colors = ['red', 'green', 'blue'],
+    shapes = ['circle', 'square', 'triangle'],
+    counts = ['1', '2', '3'];
+
+    // create the cards to add to the collection
+    for (var color in colors) {
+      for (var shape in shapes) {
+        for (var count in counts) {
+          cardModels.push(new Backbone.Model({
+                count: counts[count],
+                color: colors[color],
+                shape: shapes[shape]
+                }));
+        }
+      }
+    }
+    // create cards collection, randomized order
+    cards = new Backbone.Collection(_.shuffle(cardModels));
+
+    // create and render the list view
+    shapeCardListView = new ShapeCardListView({
+        el: '#cards-list',
+        filterCollection: filterCollection,
+        collection: cards
+    }).render();
+
+    // trigger a collection reset to start the filtering
+    cards.trigger('reset');
+</script>
+</body>
+</html>
